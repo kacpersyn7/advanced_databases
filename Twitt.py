@@ -5,6 +5,7 @@ from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 import numpy as np
+from sqlalchemy.sql.schema import PrimaryKeyConstraint
 # base.metadata.drop_all(engine)
 #%% Run postgresql
 db_string = 'postgresql://postgres:projekt@localhost:5432/twitter_analyzer'
@@ -15,13 +16,15 @@ meta = MetaData()
 # Association table MUser - Twitt
 association_muser_twitt = Table('association_muser_twitt', base.metadata,
     Column('muser_id', Integer, ForeignKey('muser.id')),
-    Column('twitt_id', Integer, ForeignKey('twitt.id'))
+    Column('twitt_id', Integer, ForeignKey('twitt.id')),
+    PrimaryKeyConstraint('muser_id', 'twitt_id')
 )
 
 # Association table Hashtag - Twitt
 association_hashtag_twitt = Table('association_hashtag_twitt', base.metadata,
     Column('hashtag_id', Integer, ForeignKey('hashtag.id')),
-    Column('twitt_id', Integer, ForeignKey('twitt.id'))
+    Column('twitt_id', Integer, ForeignKey('twitt.id')),
+    PrimaryKeyConstraint('hashtag_id', 'twitt_id')
 )
 
 # Tables definitions
@@ -116,8 +119,8 @@ authors_list.to_sql('author',engine, if_exists='append')
 # %%
 twitt_list.to_sql('twitt',engine, if_exists='append')
 #%%
-twitt_muser_list.set_index(['twitt_id']).to_sql('association_muser_twitt',engine, if_exists='append')
-twitt_hashtag_list.set_index(['twitt_id']).to_sql('association_hashtag_twitt',engine, if_exists='append')
+twitt_muser_list.set_index(['muser_id']).to_sql('association_muser_twitt',engine, if_exists='append')
+twitt_hashtag_list.set_index(['hashtag_id']).to_sql('association_hashtag_twitt',engine, if_exists='append')
 # %%
 metadata = MetaData()
 
@@ -125,7 +128,7 @@ dic_table = {}
 for table_name in engine.table_names():
     dic_table[table_name] = Table(table_name, metadata , autoload=True, autoload_with=engine)
 	
-print(repr(dic_table['author']))
+print(repr(dic_table['hashtag']))
 #%%
 from sqlalchemy import select
 
@@ -133,7 +136,7 @@ mapper_stmt = select([dic_table['twitt']])
 print('Mapper select: ')
 print(mapper_stmt)
 
-session_stmt = session.query(Twitt)
+session_stmt = session.query(Hashtag)
 print('\nSession select: ')
 print(session_stmt)
 # %%
@@ -145,7 +148,10 @@ mapper_results = engine.execute(mapper_stmt).fetchall()
 print(mapper_results)
 
 # %% Filter by hashtag
-mapper_stmt = select([dic_table['twitt'].columns.twitt_real_id.label('id'),dic_table['hashtag'].columns.hashtag_name.label('hashtag_name')]).where(dic_table['hashtag'].columns.hashtag_name == 'koronawirus')
+mapper_stmt = select([dic_table['twitt'].columns.twitt_real_id.label('id'),dic_table['hashtag'].columns.hashtag_name.label('hashtag_name')]).where(dic_table['hashtag'].columns.hashtag_name == 'włączprawdę')
 mapper_results = engine.execute(mapper_stmt).fetchall()
 print(mapper_results)
+# %%
+result = session.query(Hashtag).join(Twitt).all()
+print(result)
 # %%
